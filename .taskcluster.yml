@@ -28,22 +28,11 @@ tasks:
       then: ${event.pull_request.base.repo.clone_url}
       else: ${event.repository.clone_url}
 
-    codecov_secret:
-      codecov-fuzzmanager
-
-    pypi_secret:
-      pypi-fuzzmanager
-
     project_name:
       FuzzManager
 
     matrix:
       language: python
-      secrets:
-        - type: env
-          secret: project/fuzzing/codecov-fuzzmanager
-          name: CODECOV_TOKEN
-          key: token
       script:
         - bash
         - '-xec'
@@ -100,24 +89,6 @@ tasks:
                 npm run test;
                 npm run production;
                 npm run codecov;
-          - name: PyPI upload
-            version: "3.9"
-            env:
-              TOXENV: pypi
-            script:
-              - tox
-            when:
-              release: true
-              all_passed: true
-            secrets:
-              - type: env
-                secret: project/fuzzing/pypi-fuzzmanager
-                name: TWINE_USERNAME
-                key: username
-              - type: env
-                secret: project/fuzzing/pypi-fuzzmanager
-                name: TWINE_PASSWORD
-                key: password
 
   in:
     $if: >
@@ -152,88 +123,9 @@ tasks:
           - queue:create-task:highest:proj-fuzzing/ci
           - queue:create-task:highest:proj-fuzzing/ci-*
           - queue:scheduler-id:taskcluster-github
-          - secrets:get:project/fuzzing/${codecov_secret}
-          - secrets:get:project/fuzzing/${pypi_secret}
         metadata:
           name: ${project_name} CI decision
           description: Schedule CI tasks for ${project_name}
           owner: '${user}@users.noreply.github.com'
           source: ${http_repo}/raw/${fetch_rev}/.taskcluster.yml
-      - taskId: {$eval: as_slugid("docker")}
-        taskGroupId: ${task_group}
-        provisionerId: proj-fuzzing
-        workerType: ci
-        dependencies: []
-        created: {$fromNow: ''}
-        deadline: {$fromNow: '1 hour'}
-        payload:
-          image:
-            namespace: project.fuzzing.orion.orion-builder.master
-            path: public/orion-builder.tar.zst
-            type: indexed-image
-          maxRunTime: 3600
-          capabilities:
-            privileged: true
-          env:
-            LOAD_DEPS: "0"
-            GIT_REPOSITORY: ${http_repo}
-            GIT_REVISION: ${fetch_rev}
-            BUILD_TOOL: podman
-            DOCKERFILE: Dockerfile
-            IMAGE_NAME: mozillasecurity/fuzzmanager
-            ARCHIVE_PATH: /image.tar
-          command:
-            - sh
-            - -c
-            - uname -a && exec build
-          artifacts:
-            public/fuzzmanager.tar.zst:
-              expires: {$fromNow: '6 months'}
-              path: /image.tar.zst
-              type: file
-        scopes:
-          - docker-worker:capability:privileged
-        metadata:
-          name: FuzzManager Docker build
-          description: FuzzManager Docker build
-          owner: '${user}@users.noreply.github.com'
-          source: ${http_repo}/raw/${fetch_rev}/.taskcluster.yml
-      - $if: 'tasks_for in ["github-push"] && fetch_ref == "refs/heads/master"'
-        then:
-          taskId: {$eval: as_slugid("docker_push")}
-          taskGroupId: ${task_group}
-          provisionerId: proj-fuzzing
-          workerType: ci
-          dependencies:
-            - {$eval: as_slugid("docker")}
-          created: {$fromNow: ''}
-          deadline: {$fromNow: '1 hour'}
-          payload:
-            capabilities:
-              privileged: true
-            image:
-              namespace: project.fuzzing.orion.orion-builder.master
-              path: public/orion-builder.tar.zst
-              type: indexed-image
-            maxRunTime: 3600
-            features:
-              taskclusterProxy: true
-            env:
-              TASK_ID: {$eval: as_slugid("docker")}
-              TASKCLUSTER_SECRET: "project/fuzzing/docker-hub"
-              GIT_REPOSITORY: ${http_repo}
-              GIT_REVISION: ${fetch_rev}
-              SERVICE_NAME: fuzzmanager
-            command:
-              - sh
-              - -c
-              - uname -a && exec push
-          scopes:
-            - docker-worker:capability:privileged
-            - secrets:get:project/fuzzing/docker-hub
-          metadata:
-            name: FuzzManager Docker push
-            description: FuzzManager Docker push
-            owner: '${user}@users.noreply.github.com'
-            source: ${http_repo}/raw/${fetch_rev}/.taskcluster.yml
     else: []
