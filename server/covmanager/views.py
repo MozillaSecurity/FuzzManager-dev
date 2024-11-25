@@ -58,8 +58,15 @@ def collections_diff(request):
 
 
 def collections_reportsummary(request, collectionid):
+    collection = get_object_or_404(Collection, pk=collectionid)
+
+    collection_data = {
+        "id" : collection.id,
+        "created" : collection.created.strftime("%Y-%m-%dT%H:%M:%SZ")
+    }
+    
     return render(
-        request, "reportconfigurations/summary.html", {"collectionid": collectionid}
+        request, "reportconfigurations/summary.html", {"collection": collection_data}
     )
 
 
