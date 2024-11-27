@@ -62,7 +62,7 @@ def collections_reportsummary(request, collectionid):
 
     collection_data = {
         "id" : collection.id,
-        "created" : collection.created.strftime("%Y-%m-%dT%H:%M:%SZ")
+        "created" : collection.created.isoformat()
     }
     
     return render(
