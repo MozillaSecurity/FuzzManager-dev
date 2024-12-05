@@ -20,18 +20,33 @@ module.exports = {
       {
         test: /\.vue$/,
         loader: "vue-loader",
+        options: {
+          compilerOptions: {
+            compatConfig: {
+              MODE: 3,
+            },
+          },
+        },
       },
       {
         test: /\.css$/,
         use: [MiniCssExtractPlugin.loader, "css-loader"],
+      },
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "babel-loader",
+        },
       },
     ],
   },
 
   resolve: {
     alias: {
-      handlebars: "handlebars/dist/handlebars.min.js",
-      vue: "vue/dist/vue.js",
+      "@": path.resolve(__dirname, "src"),
+      vue: "@vue/compat",
     },
+    extensions: [".js", ".vue", ".json"],
   },
 };

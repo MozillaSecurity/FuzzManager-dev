@@ -61,66 +61,55 @@ let URLS = {
 
 let pmanager = new HashParamManager()
 
-let covmanager = new Vue({
-  el: '#main',
+// Create Vue app using Vue 3 syntax
+const app = Vue.createApp({
   components: {
     vueSlider,
   },
-  data: {
-    csrftoken: "",
-    loading: false,
-    loading_incomplete: false,
-    chart: {
+  created(){
+    csrftoken.value = getCSRFToken()
+    fetch()
+
+    const formattedDate = formatClientTimestamp("{{collection.created}}")
+    this.chart.data.created = formattedDate
+    document.title += ` - ${formattedDate}`
+  },
+  setup() {
+    // Use Vue 3 reactivity
+    const loading = Vue.ref(false)
+    const loading_incomplete = Vue.ref(false)
+    const chart = Vue.reactive({
       data: {},
       level: 0,
       maxlevel: 0,
       slider: {
         initialized: false,
       },
-    }
-  },
-  watch: {
-    'chart.data': function() {
-      this.draw()
-    },
-    'chart.level': function() {
-      this.draw()
-    },
-    'chart.maxlevel': function() {
-      if (!this.chart.slider.initialized) {
-        this.chart.level = this.chart.maxlevel
-        this.chart.slider.initialized = true
-      }
-    }
-  },
-  created: function () {
-    this.csrftoken = getCSRFToken()
-    this.fetch()
+    })
+    const csrftoken = Vue.ref("")
 
-    const formattedDate = formatClientTimestamp("{{collection.created}}")
-    this.chart.data.created = formattedDate
-    document.title += ` - ${formattedDate}`
-  },
-  methods: {
-    fetch: _.throttle (function () {
-      this.loading = true
-      fetch(URLS.rs_api, {
+
+
+
+    // Methods
+    const fetch = _.throttle(function () {
+      loading.value = true
+      window.fetch(URLS.rs_api, {
         method: 'GET',
         credentials: 'same-origin'
       }).then(response => {
         if (response.ok) {
           if (response.status === 202) {
-            // Summary is still being processed, retry in a few
-            setTimeout(this.fetch, 1000)
-            this.loading_incomplete = true
+            setTimeout(fetch, 1000)
+            loading_incomplete.value = true
             return;
           }
-          this.loading_incomplete = false
-          this.loading = false
+          loading_incomplete.value = false
+          loading.value = false
           return response.json()
         }
         swal('Oops', E_SERVER_ERROR, 'error')
-        this.loading = false
+        loading.value = false
       }).then(json => {
         if (json) {
           if ("error" in json) {
@@ -132,21 +121,20 @@ let covmanager = new Vue({
             swal('Configuration Warning', json["warning"], 'warning')
           }
 
-          this.chart.slider.initialized = false
-          this.chart.data = json
+          chart.slider.initialized = false
+          chart.data = json
         }
       })
-    }, 500),
-    refresh: function() {
-      var self = this
+    }, 500)
 
-      return fetch(URLS.rs_api, {
+    const refresh = function() {
+      return window.fetch(URLS.rs_api, {
         method: 'POST',
         credentials: 'same-origin',
         headers: {
           "Content-Type": "application/json; charset=utf-8",
           "X-Requested-With": "XMLHttpRequest",
-          "X-CSRFToken": this.csrftoken
+          "X-CSRFToken": csrftoken.value
         },
         body: "",
       })
@@ -157,13 +145,15 @@ let covmanager = new Vue({
         swal('Oops', E_SERVER_ERROR, 'error')
       })
       .then(() => {
-        self.fetch()
+        fetch()
       })
-    },
-    textual: function() {
+    }
+
+    const textual = function() {
       window.open(URLS["html_url"], '_blank').focus()
-    },
-    draw: function() {
+    }
+
+    const draw = function() {
       let self = this
       let data = this.chart.data
       if (!data) return;
@@ -402,11 +392,40 @@ let covmanager = new Vue({
             .attr("height", function(d) { return d.y1 - d.y0 - hover; });
         };
       }
-    },
-  },
-})
+    }
 
-// This updates our path variable in the Vue whenever the hash changes, which again triggers a reload of the data.
+
+    // Watch effects using Vue 3 watch
+    Vue.watch(() => chart.data, () => {
+      draw()
+    })
+
+    Vue.watch(() => chart.level, () => {
+      draw()
+    })
+
+    Vue.watch(() => chart.maxlevel, () => {
+      if (!chart.slider.initialized) {
+        chart.level = chart.maxlevel
+        chart.slider.initialized = true
+      }
+    })
+
+    // Return reactive properties and methods
+    return {
+      loading,
+      loading_incomplete,
+      chart,
+      csrftoken,
+      fetch,
+      refresh,
+      textual,
+      draw
+    }
+  }
+}).mount('#main')
+
+// Hash param manager listener
 window.onhashchange = function() {
   pmanager.update_state()
 }
