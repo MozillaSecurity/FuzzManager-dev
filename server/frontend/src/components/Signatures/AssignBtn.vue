@@ -1,53 +1,56 @@
 <template>
-  <a class="btn btn-default" v-on:click="link">Assign an existing bug</a>
+  <button class="btn btn-default" @click="link">Assign an existing bug</button>
 </template>
 
 <script>
+import swal from "sweetalert";
+import { defineComponent } from "vue";
 import { assignExternalBug, errorParser } from "../../helpers";
 import AssignBtnForm from "./AssignBtnForm.vue";
-import Vue from "vue";
-import swal from "sweetalert";
 
-export default {
+export default defineComponent({
+  components: {
+    AssignBtnForm,
+  },
   props: {
     bucket: {
       type: Number,
-      default: null,
+      required: true,
     },
     providers: {
       type: Array,
-      default: null,
+      required: true,
     },
   },
   methods: {
-    link() {
-      const FormCtor = Vue.extend(AssignBtnForm);
-      const linkForm = new FormCtor({
+    async link() {
+      const formCtor = defineComponent(AssignBtnForm);
+      const assignForm = new formCtor({
         parent: this,
         propsData: {
           providers: this.providers,
         },
       }).$mount();
-      swal({
-        title: "Assign existing bug",
-        content: linkForm.$el,
+
+      const value = await swal({
+        title: "Assign External Bug",
+        content: assignForm.$el,
         buttons: true,
-      }).then((value) => {
-        if (value) {
-          assignExternalBug(
-            this.bucket,
-            linkForm.externalBugId,
-            linkForm.selectedProvider,
-          )
-            .then((data) => {
-              window.location.href = data.url;
-            })
-            .catch((err) => {
-              swal("Oops", errorParser(err), "error");
-            });
-        }
       });
+
+      if (value) {
+        try {
+          const data = await assignExternalBug(
+            this.bucket,
+            assignForm.provider,
+            assignForm.bug,
+          );
+          window.location.href = data.url;
+        } catch (err) {
+          swal("Oops", errorParser(err), "error");
+        }
+      }
     },
   },
-};
+});
 </script>

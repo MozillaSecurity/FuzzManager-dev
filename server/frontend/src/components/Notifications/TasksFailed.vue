@@ -1,13 +1,11 @@
 <template>
   <div class="row override-row">
-    <small class="col-md-1">
-      Received {{ notification.timestamp | formatDate }}
-    </small>
+    <small class="col-md-1"> Received {{ formattedDate }} </small>
     <span class="label label-danger">Tasks failed</span>
     <span class="description">
       {{ notification.description }}
     </span>
-    <button type="button" class="close" v-on:click="dismiss">
+    <button type="button" class="close" @click="dismiss">
       <span aria-hidden="true" title="Dismiss">&times;</span>
     </button>
     <div class="btn-group pull-right" role="group">
@@ -20,35 +18,45 @@
 </template>
 
 <script>
-import { errorParser, formatClientTimestamp } from "../../helpers";
+import { computed, defineComponent } from "vue";
 import * as api from "../../api";
+import { errorParser, formatClientTimestamp } from "../../helpers";
 
-export default {
+export default defineComponent({
+  name: "TasksFailed",
   props: {
     notification: {
       type: Object,
       required: true,
     },
   },
-  filters: {
-    formatDate: formatClientTimestamp,
-  },
-  methods: {
-    async dismiss() {
+  setup(props, { emit }) {
+    // Computed property to replace the filter
+    const formattedDate = computed(() => {
+      return formatClientTimestamp(props.notification.timestamp);
+    });
+
+    // Methods
+    const dismiss = async () => {
       try {
-        await api.dismissNotification(this.notification.id);
-        this.$emit("remove-notification", this.notification.id);
+        await api.dismissNotification(props.notification.id);
+        emit("remove-notification", props.notification.id);
       } catch (err) {
-        this.$emit(
+        emit(
           "update-dismiss-error",
           `An error occurred while marking notification ${
-            this.notification.id
+            props.notification.id
           } as read: ${errorParser(err)}`,
         );
       }
-    },
+    };
+
+    return {
+      formattedDate,
+      dismiss,
+    };
   },
-};
+});
 </script>
 
 <style scoped>
