@@ -61,39 +61,16 @@ let URLS = {
 
 let pmanager = new HashParamManager()
 
-let covmanager = new Vue({
-  el: '#main',
+const app = Vue.createApp({
   components: {
     vueSlider,
   },
-  data: {
-    csrftoken: "",
-    loading: false,
-    loading_incomplete: false,
-    chart: {
-      data: {},
-      level: 0,
-      maxlevel: 0,
-      slider: {
-        initialized: false,
-      },
-    }
+  data() {
+    return {
+      csrftoken: "",
+    };
   },
-  watch: {
-    'chart.data': function() {
-      this.draw()
-    },
-    'chart.level': function() {
-      this.draw()
-    },
-    'chart.maxlevel': function() {
-      if (!this.chart.slider.initialized) {
-        this.chart.level = this.chart.maxlevel
-        this.chart.slider.initialized = true
-      }
-    }
-  },
-  created: function () {
+  created(){
     this.csrftoken = getCSRFToken()
     this.fetch()
 
@@ -101,26 +78,39 @@ let covmanager = new Vue({
     this.chart.data.created = formattedDate
     document.title += ` - ${formattedDate}`
   },
-  methods: {
-    fetch: _.throttle (function () {
-      this.loading = true
-      fetch(URLS.rs_api, {
+  setup() {
+    const loading = Vue.ref(false)
+    const loading_incomplete = Vue.ref(false)
+    const chart = Vue.reactive({
+      data: {},
+      level: 0,
+      maxlevel: 0,
+      slider: {
+        initialized: false,
+      },
+    })
+
+
+
+
+    const fetch = _.throttle(function () {
+      loading.value = true
+      window.fetch(URLS.rs_api, {
         method: 'GET',
         credentials: 'same-origin'
       }).then(response => {
         if (response.ok) {
           if (response.status === 202) {
-            // Summary is still being processed, retry in a few
-            setTimeout(this.fetch, 1000)
-            this.loading_incomplete = true
+            setTimeout(fetch, 1000)
+            loading_incomplete.value = true
             return;
           }
-          this.loading_incomplete = false
-          this.loading = false
+          loading_incomplete.value = false
+          loading.value = false
           return response.json()
         }
         swal('Oops', E_SERVER_ERROR, 'error')
-        this.loading = false
+        loading.value = false
       }).then(json => {
         if (json) {
           if ("error" in json) {
@@ -132,15 +122,14 @@ let covmanager = new Vue({
             swal('Configuration Warning', json["warning"], 'warning')
           }
 
-          this.chart.slider.initialized = false
-          this.chart.data = json
+          chart.slider.initialized = false
+          chart.data = json
         }
       })
-    }, 500),
-    refresh: function() {
-      var self = this
+    }, 500)
 
-      return fetch(URLS.rs_api, {
+    const refresh = function() {
+      return window.fetch(URLS.rs_api, {
         method: 'POST',
         credentials: 'same-origin',
         headers: {
@@ -157,13 +146,15 @@ let covmanager = new Vue({
         swal('Oops', E_SERVER_ERROR, 'error')
       })
       .then(() => {
-        self.fetch()
+        fetch()
       })
-    },
-    textual: function() {
+    }
+
+    const textual = function() {
       window.open(URLS["html_url"], '_blank').focus()
-    },
-    draw: function() {
+    }
+
+    const draw = function() {
       let self = this
       let data = this.chart.data
       if (!data) return;
@@ -402,9 +393,35 @@ let covmanager = new Vue({
             .attr("height", function(d) { return d.y1 - d.y0 - hover; });
         };
       }
-    },
-  },
-})
+    }
+
+
+    Vue.watch(() => chart.data, () => {
+      draw()
+    })
+
+    Vue.watch(() => chart.level, () => {
+      draw()
+    })
+
+    Vue.watch(() => chart.maxlevel, () => {
+      if (!chart.slider.initialized) {
+        chart.level = chart.maxlevel
+        chart.slider.initialized = true
+      }
+    })
+
+    return {
+      loading,
+      loading_incomplete,
+      chart,
+      fetch,
+      refresh,
+      textual,
+      draw
+    }
+  }
+}).mount('#main')
 
 // This updates our path variable in the Vue whenever the hash changes, which again triggers a reload of the data.
 window.onhashchange = function() {
