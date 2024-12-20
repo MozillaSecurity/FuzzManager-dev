@@ -13,17 +13,16 @@
         "format": "prettier --write ./"
     },
     "dependencies": {
-      "axios": "^1.6.7",
-      "d3": "^7.8.5",
-      "floating-vue": "^2.0.0",
-      "handlebars": "^4.7.8",
-      "js-base64": "^3.7.7",
-      "lodash": "^4.17.21",
-      "sweetalert": "^2.1.2",
-      "vue": "^3.4.21",
-      "vue-loading-overlay": "^6.0.3",
-      "vue-router": "^4.3.0",
-      "vue-slider-component": "^3.2.24"
+        "axios": "^1.6.7",
+        "d3": "^7.8.5",
+        "floating-vue": "^2.0.0",
+        "handlebars": "^4.7.8",
+        "js-base64": "^3.7.7",
+        "lodash": "^4.17.21",
+        "sweetalert": "^2.1.2",
+        "vue": "^3.4.21",
+        "vue-loading-overlay": "^6.0.3",
+        "vue-router": "^4.3.0"
     },
     "devDependencies": {
         "@babel/core": "^7.24.0",

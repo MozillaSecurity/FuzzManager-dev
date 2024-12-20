@@ -195,6 +195,9 @@ const app = Vue.createApp({
             }
             swal('Oops', E_SERVER_ERROR, 'error')
           }).then(json => {
+            if(!json){
+              return;
+            }
             let analysis_result = {
               collection: collection,
               status: true,
