@@ -47,9 +47,7 @@
             </span>
           </td>
           <td :class="['cov', 'cov-codeline', item.lclass]">
-            <div v-html="highlight_code(item.line)">
-              !{ highlight_code(item.line) }!
-            </div>
+            <div v-html="highlight_code(item.line)"></div>
           </td>
         </tr>
       </tbody>
@@ -549,6 +547,7 @@ const app = Vue.createApp({
         this.report_list = json['results']
 
         function compute_report_description(report) {
+          report = report ?? {}
           if (report.is_quarterly) {
             report.description = "Quarterly Report - " + formatQuarterly(report.data_created)
           } else if (report.is_monthly) {
@@ -677,7 +676,7 @@ const app = Vue.createApp({
       return classArray
     },
     add_path_class: function (value) {
-      let classArray = this.class ? this.class.split(' ') : []
+      let classArray =  'class' in this ? this.class.split(' ') : []
       if ('children' in value) {
         classArray.push('bi-folder')
       } else {
