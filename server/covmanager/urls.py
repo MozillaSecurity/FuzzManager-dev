@@ -19,6 +19,7 @@ urlpatterns = [
     re_path(
         r"^rest/api-auth/", include("rest_framework.urls", namespace="rest_framework")
     ),
+    re_path(r"^collections/$", views.collections, name="collections"),
     re_path(r"^$", views.index, name="index"),
     re_path(r"^reports/$", views.reports, name="reports"),
     re_path(
@@ -37,7 +38,7 @@ urlpatterns = [
         views.repositories_search_api,
         name="repositories_search_api",
     ),
-    re_path(r"^collections/$", views.collections, name="collections"),
+    re_path(r"^$", views.index, name="index"),
     re_path(
         r"^collections/aggregate/api/",
         views.collections_aggregate_api,

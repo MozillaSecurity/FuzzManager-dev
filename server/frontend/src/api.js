@@ -64,3 +64,22 @@ export const listPools = async (params) =>
 
 export const listTasks = async (params) =>
   (await mainAxios.get("/taskmanager/rest/tasks/", { params })).data;
+
+export const covManagerStats = async (url, cb) =>
+  await mainAxios.get(url).then((resp) => {
+    if (resp.status === 202) {
+      cb();
+      return;
+    }
+
+    return resp.data;
+  });
+
+export const collectionList = async (url) => (await mainAxios.get(url)).data;
+
+export const rvLists = async (url) => (await mainAxios.get(url)).data;
+
+export const reportMetadata = async (url) => (await mainAxios.get(url)).data;
+
+export const reportConfiguration = async (url) =>
+  (await mainAxios.get(url)).data;
