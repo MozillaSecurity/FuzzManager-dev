@@ -26,13 +26,14 @@
       </div>
       <div class="panel-body">
         <div id="graph-container" style="margin: 0 auto; width: 1280px">
-          <div style="padding-bottom: 20px">
+          <div style="padding-bottom: 40px">
             <span>Maximum Display Depth: </span>
             <vue-slider
               v-model="chart.level"
+              :min="0"
               :max="chart.maxlevel"
+              marks
             ></vue-slider>
-            <span>{{ chart.level }}</span>
           </div>
           <svg width="1280" height="1024"></svg>
         </div>

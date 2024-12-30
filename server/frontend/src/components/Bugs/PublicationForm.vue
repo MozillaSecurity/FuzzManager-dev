@@ -544,7 +544,14 @@
 <script>
 import Handlebars from "handlebars";
 import { Base64 } from "js-base64";
-import { computed, defineComponent, getCurrentInstance, ref, watch } from "vue";
+import {
+  computed,
+  defineComponent,
+  getCurrentInstance,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import * as api from "../../api";
 import * as bugzillaApi from "../../bugzilla_api";
 import * as HandlebarsHelpers from "../../handlebars_helpers";
@@ -940,7 +947,7 @@ export default defineComponent({
       );
       provider.value = providers.value.find((p) => p.id === props.providerId);
       selectedProvider.value = provider.value.id;
-
+      createdBugId.value = 500;
       data = await api.listTemplates();
       templates.value = data.results.filter((t) => t.mode === "bug");
       template.value = templates.value.find((t) => t.id === props.templateId);
@@ -950,7 +957,7 @@ export default defineComponent({
       }
     };
 
-    mounted();
+    onMounted(mounted);
 
     return {
       providers,
@@ -978,6 +985,10 @@ export default defineComponent({
       bugLink,
       bugzillaToken,
       entryMetadata,
+      renderedDescription,
+      renderedWhiteboard,
+      renderedKeywords,
+      renderedAttrs,
       goBack,
       createExternalBug,
     };

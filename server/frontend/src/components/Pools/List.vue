@@ -166,10 +166,10 @@ export default defineComponent({
       pools,
       sortKeys,
       orderedPools,
-      sortBy,
-      addSort,
       validSortKeys,
       defaultSortKeys,
+      sortBy,
+      addSort,
     };
   },
 });
