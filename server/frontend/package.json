@@ -25,6 +25,7 @@
         "vue": "^3.4.21",
         "vue-3-slider-component": "^1.0.1",
         "vue-loading-overlay": "^6.0.3",
+        "vue-multiselect": "^3.1.0",
         "vue-router": "^4.3.0"
     },
     "devDependencies": {

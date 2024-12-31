@@ -157,4 +157,7 @@ export default defineComponent({
 .mt-light {
   margin-top: 0.5rem;
 }
+.btn {
+  margin-left: 0.8rem;
+}
 </style>
