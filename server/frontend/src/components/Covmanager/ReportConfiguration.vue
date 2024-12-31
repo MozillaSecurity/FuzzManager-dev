@@ -213,18 +213,9 @@ export default defineComponent({
     this.fetch();
   },
   methods: {
-    apiurl: function () {
-      let url = URLS.rc_list;
-
-      if (this.search) {
-        url += `?q=${this.search}`;
-      }
-
-      return url;
-    },
     fetch: _.throttle(function () {
       this.loading = true;
-      reportConfiguration("wwsd" + this.apiurl())
+      reportConfiguration({ q: this.search })
         .then((json) => {
           this.rc_list = json["results"];
           this.loading = false;

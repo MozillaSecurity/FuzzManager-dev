@@ -5,17 +5,8 @@
 {% block body_content %}
 <covmanagerbrowse 
   {% if id %} :ids="{{ids}}" {% endif %}
-  :urls=" {
-    rc: '{% url 'covmanager:reportconfigurations_list_api' %}',
-    reports_api: '{% url 'covmanager:reports_api' %}',
-  }"
   {% if collectionid %} :collection-id="{{collectionid}}" {% endif %}
   :diff-api="{% if diff_api %}true {% else %}false{% endif %}" 
-  :api-url="{% if diff_api %}
-  '{% url 'covmanager:collections_diff_api' "" %}'
-  {% else %}
-  '{% url 'covmanager:collections_browse_api' collectionid "" %}'
-  {% endif %}"
 />
 
 {% endblock body_content %}

@@ -303,8 +303,6 @@ export default defineComponent({
                     }
                   }
 
-                  console.log({ analysis_result });
-
                   analysis_results.push(analysis_result);
                 });
             });

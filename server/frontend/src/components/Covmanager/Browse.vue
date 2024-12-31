@@ -205,7 +205,12 @@ import _ from "lodash";
 import Prism from "prismjs";
 import swal from "sweetalert";
 import { defineComponent } from "vue";
-import { covManagerStats, reportMetadata, rvLists } from "../../api";
+import {
+  covManagerBrowseStats,
+  covManagerDiffStats,
+  reportMetadata,
+  rvLists,
+} from "../../api";
 import { E_SERVER_ERROR, formatMonthly, formatQuarterly } from "../../helpers";
 import { HashParamManager } from "../../params";
 import "../../public/css/covmanager.css";
@@ -229,18 +234,9 @@ export default defineComponent({
       required: false,
       default: () => [],
     },
-    urls: {
-      type: Object,
-      required: true,
-    },
-    apiUrl: {
-      type: String,
-      required: true,
-    },
   },
   data() {
     let ISDIFF = false;
-    let APIURL = this.apiUrl;
     let GETPARAMS = null;
     let COLLECTIONID = this.collectionId;
 
@@ -274,10 +270,8 @@ export default defineComponent({
       storage_support: false,
       report_list: [],
       ISDIFF,
-      APIURL,
       GETPARAMS,
       COLLECTIONID,
-      URLS: this.urls,
       pmanager,
     };
   },
@@ -381,33 +375,44 @@ export default defineComponent({
     });
   },
   methods: {
-    apiurl: function () {
-      let url = this.APIURL + this.path;
-
-      let query_params = [];
+    apiParams: function () {
+      let query_params = {};
 
       let ids = this.pmanager.get_value("ids");
       if (ids) {
-        query_params.push(`ids=${ids}`);
+        query_params["ids"] = ids;
       }
 
       let rc = this.pmanager.get_value("rc");
       if (rc) {
-        query_params.push(`rc=${rc}`);
+        query_params["rc"] = rc;
       }
 
-      if (query_params.length > 0) {
-        url += "?" + query_params.join("&");
-      }
-
-      return url;
+      return query_params;
     },
     fetch: _.throttle(function () {
       this.loading = true;
-      covManagerStats(this.apiurl(), () => {
-        setTimeout(this.fetch, 1000);
-        this.loading_incomplete = true;
-      })
+
+      const requestConfig = {
+        path: this.path,
+        params: this.apiParams(),
+        cb: () => {
+          setTimeout(this.fetch, 1000);
+          this.loading_incomplete = true;
+        },
+      };
+
+      let apiRequest;
+      if (this.diffApi) {
+        apiRequest = covManagerDiffStats(requestConfig);
+      } else {
+        apiRequest = covManagerBrowseStats({
+          ...requestConfig,
+          id: this.collectionId,
+        });
+      }
+
+      apiRequest
         .then((json) => {
           if (!json) {
             return;
@@ -575,7 +580,7 @@ export default defineComponent({
         if (!ids) return;
       }
 
-      return reportMetadata(`${this.URLS["reports_api"]}?coverage__ids=${ids}`)
+      return reportMetadata({ coverage__ids: ids })
         .then((json) => {
           this.report_list = json["results"];
 
@@ -619,7 +624,7 @@ export default defineComponent({
         });
     },
     get_rc_list: function () {
-      return rvLists(`${this.URLS["rc"]}?__exclude=directives`)
+      return rvLists({ __exclude: "directives" })
         .then((json) => {
           this.rc_list = json["results"];
 

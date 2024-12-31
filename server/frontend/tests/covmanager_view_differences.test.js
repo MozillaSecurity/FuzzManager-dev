@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import Chart from "chart.js/auto";
 import { nextTick } from "vue";
-import { covManagerStats, reportMetadata, rvLists } from "../src/api";
+import { covManagerDiffStats, reportMetadata, rvLists } from "../src/api";
 import Browse from "../src/components/Covmanager/Browse.vue";
 import LineChart from "../src/components/Covmanager/LineChart.vue";
 
@@ -121,14 +121,13 @@ test("updates chart when data changes", async () => {
 });
 
 test("renders diff graph successfully", async () => {
-  covManagerStats.mockResolvedValue(covManagerData);
+  covManagerDiffStats.mockResolvedValue(covManagerData);
   rvLists.mockResolvedValue(rvListData);
   rvLists.mockResolvedValue(rvListData);
 
   window.scroll = jest.fn();
 
   const propsData = {
-    apiUrl: "/covmanager/collections/diff/api/",
     urls: {
       rc: "/covmanager/reportconfigurations/api/",
       reports_api: "/covmanager/reports/api/",
@@ -143,16 +142,15 @@ test("renders diff graph successfully", async () => {
 
   await nextTick();
 
-  expect(covManagerStats).toHaveBeenCalledTimes(1);
-  expect(covManagerStats).toHaveBeenCalledWith(
-    propsData.apiUrl,
-    expect.any(Function),
-  );
+  expect(covManagerDiffStats).toHaveBeenCalledTimes(1);
+  expect(covManagerDiffStats).toHaveBeenCalledWith({
+    path: "",
+    cb: expect.any(Function),
+    params: {},
+  });
 
   expect(rvLists).toHaveBeenCalledTimes(1);
-  expect(rvLists).toHaveBeenCalledWith(
-    `${propsData.urls.rc}?__exclude=directives`,
-  );
+  expect(rvLists).toHaveBeenCalledWith({ __exclude: "directives" });
 
   expect(reportMetadata).not.toHaveBeenCalled();
 

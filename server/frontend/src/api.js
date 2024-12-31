@@ -65,21 +65,42 @@ export const listPools = async (params) =>
 export const listTasks = async (params) =>
   (await mainAxios.get("/taskmanager/rest/tasks/", { params })).data;
 
-export const covManagerStats = async (url, cb) =>
-  await mainAxios.get(url).then((resp) => {
-    if (resp.status === 202) {
-      cb();
-      return;
-    }
+export const covManagerDiffStats = async ({ path, params, cb }) =>
+  await mainAxios
+    .get("/covmanager/collections/diff/api/" + path, { params })
+    .then((resp) => {
+      if (resp.status === 202) {
+        cb();
+        return;
+      }
 
-    return resp.data;
-  });
+      return resp.data;
+    });
 
-export const collectionList = async (url) => (await mainAxios.get(url)).data;
+export const covManagerBrowseStats = async ({ path, params, cb, id }) =>
+  await mainAxios
+    .get(`/covmanager/collections/${id}/browse/api/` + path, { params })
+    .then((resp) => {
+      if (resp.status === 202) {
+        cb();
+        return;
+      }
 
-export const rvLists = async (url) => (await mainAxios.get(url)).data;
+      return resp.data;
+    });
 
-export const reportMetadata = async (url) => (await mainAxios.get(url)).data;
+export const collectionList = async (params) =>
+  (await mainAxios.get("/covmanager/collections/api/", { params })).data;
 
-export const reportConfiguration = async (url) =>
-  (await mainAxios.get(url)).data;
+export const collectionAggregate = async ({ data }) =>
+  (await mainAxios.post("/covmanager/collections/aggregate/api/", data)).data;
+export const rvLists = async (params) =>
+  (await mainAxios.get("/covmanager/reportconfigurations/api/", { params }))
+    .data;
+
+export const reportMetadata = async (params) =>
+  (await mainAxios.get("/covmanager/reports/api/", { params })).data;
+
+export const reportConfiguration = async (params) =>
+  (await mainAxios.get("/covmanager/reportconfigurations/api/", { params }))
+    .data;

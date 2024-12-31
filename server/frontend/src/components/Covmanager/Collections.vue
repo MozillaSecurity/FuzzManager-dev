@@ -206,7 +206,7 @@ import swal from "sweetalert";
 import { defineComponent } from "vue";
 import "../../public/css/covmanager.css";
 
-import { collectionList } from "../../api";
+import { collectionAggregate, collectionList } from "../../api";
 import { E_SERVER_ERROR, formatClientTimestamp } from "../../helpers";
 import { HashParamManager } from "../../params";
 
@@ -292,12 +292,13 @@ export default defineComponent({
     self.fetch();
   },
   methods: {
-    apiurl: function () {
-      let url = URLS.collections_api;
+    apiParam: function () {
+      const queryParams = {};
 
       for (let k in this.search) {
         const obj = this.search[k];
         const v = obj.value;
+        queryParams[k] = obj.value;
 
         if ("postfix" in obj) {
           k += obj.postfix;
@@ -313,15 +314,16 @@ export default defineComponent({
       let query = pmanager.get_query();
 
       if (query) {
-        url += "?" + query;
         pmanager.update_hash();
       }
 
-      return url;
+      const queryObject = Object.fromEntries(new URLSearchParams(query));
+
+      return queryObject;
     },
     fetch: _.throttle(function () {
       this.loading = true;
-      collectionList(this.apiurl())
+      collectionList(this.apiParam())
         .then((json) => {
           this.collections = json["results"];
           this.loading = false;
@@ -410,15 +412,7 @@ export default defineComponent({
             data["description"] = description;
           }
 
-          fetch(URLS.aggregate, {
-            method: "POST",
-            credentials: "same-origin",
-            headers: {
-              "Content-Type": "application/json; charset=utf-8",
-              "X-Requested-With": "XMLHttpRequest",
-            },
-            body: JSON.stringify(data),
-          })
+          collectionAggregate({ data })
             .then((response) => {
               this.loading = false;
               if (response.ok) {
@@ -433,6 +427,10 @@ export default defineComponent({
               } else {
                 swal("Oops", E_SERVER_ERROR, "error");
               }
+            })
+            .catch(() => {
+              this.loading = false;
+              swal("Oops", E_SERVER_ERROR, "error");
             });
         });
       }

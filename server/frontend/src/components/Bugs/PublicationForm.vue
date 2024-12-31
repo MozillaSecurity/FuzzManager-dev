@@ -947,7 +947,6 @@ export default defineComponent({
       );
       provider.value = providers.value.find((p) => p.id === props.providerId);
       selectedProvider.value = provider.value.id;
-      createdBugId.value = 500;
       data = await api.listTemplates();
       templates.value = data.results.filter((t) => t.mode === "bug");
       template.value = templates.value.find((t) => t.id === props.templateId);
