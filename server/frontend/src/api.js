@@ -64,3 +64,11 @@ export const listPools = async (params) =>
 
 export const listTasks = async (params) =>
   (await mainAxios.get("/taskmanager/rest/tasks/", { params })).data;
+
+export const createBugzillaBugTemplate = async (data) =>
+  (await mainAxios.post("/crashmanager/bugzilla/templates/create-bug/", data))
+    .status;
+
+export const updateBugzillaBugTemplate = async (id, data) =>
+  (await mainAxios.post(`/crashmanager/bugzilla/templates/${id}/`, data))
+    .status;
