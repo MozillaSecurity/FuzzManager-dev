@@ -1609,6 +1609,20 @@ class BugzillaTemplateEditView(UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        template_id = self.kwargs[self.pk_url_kwarg]
+
+        try:
+            template_object = self.model.objects.get(pk=template_id)
+            template_json = json.dumps(BugzillaTemplateSerializer(template_object).data)
+
+            user = User.get_or_create_restricted(self.request.user)[0]
+            provider = get_object_or_404(BugProvider, pk=user.defaultProviderId)
+
+            context["provider"] = provider
+            context['template_object'] = template_json
+        except BugzillaTemplate.DoesNotExist:
+            context['template_object'] = None
+
         context["title"] = "Edit template"
         return context
 
@@ -1628,6 +1642,15 @@ class BugzillaTemplateBugCreateView(CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["title"] = "Create a bug template"
+
+        if "provider" in self.request.GET:
+            provider = get_object_or_404(BugProvider, pk=self.request.GET["provider"])
+        else:
+            user = User.get_or_create_restricted(self.request.user)[0]
+            provider = get_object_or_404(BugProvider, pk=user.defaultProviderId)
+
+        context["provider"] = provider
+        context["template_object"] = { 'id': 0 }
         return context
 
     def form_valid(self, form):
