@@ -117,15 +117,16 @@
           @update-not-attach-data="notAttachData = $event"
           @update-data="crashData = $event"
         />
-
         <TestCaseSection
           v-if="entry.testcase"
           mode="comment"
           :initial-not-attach-test="notAttachTest"
           :entry="entry"
           :template="template"
+          :file-extension="fileExtension"
+          :file-name="fileName"
           @update-not-attach-test="notAttachTest = $event"
-          @update-filename="entry.testcase = $event"
+          @update-filename="newFileName = $event"
           @update-content="testCaseContent = $event"
         />
 
@@ -227,6 +228,7 @@
 <script>
 import Handlebars from "handlebars";
 import { Base64 } from "js-base64";
+import mime from "mime";
 import { defineComponent } from "vue";
 import * as api from "../../../api";
 import * as bugzillaApi from "../../../bugzilla_api";
@@ -289,6 +291,7 @@ export default defineComponent({
       testCaseContent: "",
       notAttachData: false,
       crashData: "",
+      newFileName: null,
     };
   },
 
@@ -342,7 +345,7 @@ export default defineComponent({
       if (!this.template || !this.entry) return "";
       try {
         const compiled = Handlebars.compile(this.template.comment);
-        let rendered = compiled({
+        const renderedData = {
           summary: this.summary,
           shortsig: this.entry.shortSignature,
           product: this.entry.product,
@@ -359,7 +362,15 @@ export default defineComponent({
             ? "(Crash data not available)"
             : "For detailed crash information, see attachment.",
           ...this.metadataExtension(this.template.comment),
-        });
+        };
+
+        if (!this.notAttachTest) {
+          renderedData["testcase_attachment"] = this.filenameWithExtension;
+        } else {
+          delete renderedData["testcase_attachment"];
+        }
+
+        let rendered = compiled(renderedData);
 
         // Remove the specified pathPrefix from traces and assertion
         if (this.entryMetadata.pathprefix) {
@@ -370,6 +381,32 @@ export default defineComponent({
       } catch {
         return "";
       }
+    },
+    fileName() {
+      const { attachmentFilename } = this.getFileDetails();
+
+      return this.newFileName ?? attachmentFilename;
+    },
+    fileExtension() {
+      const { attachmentFilenameExtension } = this.getFileDetails();
+
+      return attachmentFilenameExtension;
+    },
+    filenameWithExtension() {
+      return this.fileName + "." + this.fileExtension;
+    },
+    fileMimetype() {
+      const mimeType = mime.getType(this.filenameWithExtension);
+
+      if (mimeType) {
+        return mimeType;
+      }
+
+      if (this.entry.testcase_isbinary) {
+        return "application/octet-stream";
+      }
+
+      return "text/plain";
     },
   },
 
@@ -440,6 +477,8 @@ export default defineComponent({
         is_private: this.isPrivate,
       };
 
+      await this.publishAttachments();
+
       try {
         let data = await bugzillaApi.createComment({
           hostname: this.provider.hostname,
@@ -471,9 +510,9 @@ export default defineComponent({
         const payload = {
           ids: [this.externalBugId],
           data: Base64.encode(this.crashData),
-          file_name: "crash_data.txt",
+          file_name: this.filenameWithExtension,
           summary: "Detailed Crash Information",
-          content_type: "text/plain",
+          content_type: this.fileMimetype,
         };
 
         try {
@@ -510,11 +549,9 @@ export default defineComponent({
           data: this.entry.testcase_isbinary
             ? Base64.fromUint8Array(content)
             : Base64.encode(content),
-          file_name: this.entry.testcase,
+          file_name: this.filenameWithExtension,
           summary: `Testcase for ${comment}`,
-          content_type: this.entry.testcase_isbinary
-            ? "application/octet-stream"
-            : "text/plain",
+          content_type: this.fileMimetype,
         };
 
         try {
@@ -528,6 +565,27 @@ export default defineComponent({
           this.publishTestCaseError = errorParser(err);
         }
       }
+    },
+
+    getFileDetails() {
+      let attachmentFilename = "";
+      let attachmentFilenameExtension = "";
+      if (this.entry) {
+        // extract file name
+        const splittedAttachmentFilename = this.template?.testcase_filename
+          ? this.template.testcase_filename
+          : this.entry.testcase.split("/");
+
+        const attachmentFilenameAndExtension =
+          splittedAttachmentFilename[
+            splittedAttachmentFilename?.length - 1
+          ].split(".");
+
+        attachmentFilename = attachmentFilenameAndExtension[0];
+        attachmentFilenameExtension = attachmentFilenameAndExtension[1];
+      }
+
+      return { attachmentFilename, attachmentFilenameExtension };
     },
   },
 });
