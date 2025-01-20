@@ -1,57 +1,142 @@
 <template>
-  <div class="panel panel-default">
-    <div class="panel-heading">
+  <div :class="!isBugTemplateCreation && 'panel panel-default'">
+    <div v-if="!isBugTemplateCreation" class="panel-heading">
       <i class="bi bi-card-list"></i> Create an external bug
     </div>
     <div class="panel-body">
-      <h3>Configuration</h3>
-      <div class="row">
-        <div class="form-group col-md-6">
-          <label for="bp_select">Bug provider</label>
-          <select
-            id="bp_select"
-            v-model="selectedProvider"
-            class="form-control"
-          >
-            <option v-for="p in providers" :key="p.id" :value="p.id">
-              {{ p.hostname }}
-            </option>
-          </select>
+      <div v-if="!isBugTemplateCreation">
+        <h3>Configuration</h3>
+        <div class="row">
+          <div class="form-group col-md-6">
+            <label for="bp_select">Bug provider</label>
+            <select
+              id="bp_select"
+              v-model="selectedProvider"
+              class="form-control"
+            >
+              <option v-for="p in providers" :key="p.id" :value="p.id">
+                {{ p.hostname }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group col-md-6">
+            <label for="bt_select">Bug template</label>
+            <select
+              id="bt_select"
+              v-model="selectedTemplate"
+              class="form-control"
+            >
+              <option v-for="t in templates" :key="t.id" :value="t.id">
+                {{ t.name }}
+              </option>
+            </select>
+          </div>
         </div>
-        <div class="form-group col-md-6">
-          <label for="bt_select">Bug template</label>
-          <select
-            id="bt_select"
-            v-model="selectedTemplate"
-            class="form-control"
-          >
-            <option v-for="t in templates" :key="t.id" :value="t.id">
-              {{ t.name }}
-            </option>
-          </select>
+
+        <div v-if="provider" class="alert alert-warning" role="alert">
+          You are about to submit this bug to
+          <strong>{{ provider.hostname }}</strong>
         </div>
+        <hr />
       </div>
-
-      <div v-if="provider" class="alert alert-warning" role="alert">
-        You are about to submit this bug to
-        <strong>{{ provider.hostname }}</strong>
-      </div>
-      <hr />
-
-      <h3>Create a bug for crash {{ entryId }}</h3>
-      <div v-if="!template" class="alert alert-info" role="alert">
+      <h3 v-if="!isBugTemplateCreation">
+        Create a bug for crash {{ entryId }}
+      </h3>
+      <div
+        v-if="!template && !isBugTemplateCreation"
+        class="alert alert-info"
+        role="alert"
+      >
         Please pick a bug template to file a new bug.
       </div>
-      <form v-else>
+      <form v-else ref="formElement">
         <SummaryInput
-          v-if="provider"
+          v-if="provider && !isBugTemplateCreation"
           :initial-summary="summary"
           :bucket-id="bucketId"
           :provider="provider"
           @update-summary="summary = $event"
         />
+        <div v-else>
+          <div class="row">
+            <div
+              class="form-group col-md-6"
+              :class="{ 'has-error': bugzillaTemplateFieldErrors?.name }"
+            >
+              <label for="name" class="control-label">Template name*</label>
+              <input
+                id="name"
+                v-model="template.name"
+                type="text"
+                class="form-control"
+                required
+              />
+              <span v-if="bugzillaTemplateFieldErrors?.name" class="help-block"
+                ><strong>This field is required.</strong></span
+              >
+            </div>
+          </div>
 
-        <div class="row">
+          <div class="form-group">
+            <label for="summary">Summary</label>
+            <input
+              id="summary"
+              v-model="template.summary"
+              type="text"
+              class="form-control"
+            />
+          </div>
+
+          <div class="row">
+            <div
+              class="form-group col-md-6"
+              :class="{ 'has-error': bugzillaTemplateFieldErrors?.product }"
+            >
+              <label for="current-product" class="control-label"
+                >Current product (choose below)*</label
+              >
+              <input
+                id="current-product"
+                v-model="template.current_product"
+                type="text"
+                class="form-control"
+                disabled
+              />
+              <span
+                v-if="bugzillaTemplateFieldErrors?.product"
+                class="help-block"
+                ><strong>This field is required.</strong></span
+              >
+            </div>
+            <div
+              class="form-group col-md-6"
+              :class="{ 'has-error': bugzillaTemplateFieldErrors?.component }"
+            >
+              <label for="current-component" class="control-label"
+                >Current component (choose below)*</label
+              >
+              <input
+                id="current-component"
+                v-model="template.current_component"
+                type="text"
+                class="form-control"
+                disabled
+              />
+              <span
+                v-if="bugzillaTemplateFieldErrors?.component"
+                class="help-block"
+                ><strong>This field is required.</strong></span
+              >
+            </div>
+          </div>
+
+          <ppcselect
+            @update-product="product = $event"
+            @update-component="component = $event"
+          />
+        </div>
+
+        <div v-if="!isBugTemplateCreation" class="row">
           <ProductComponentSelect
             v-if="provider"
             :provider-hostname="provider.hostname"
@@ -193,7 +278,7 @@
           </div>
         </div>
 
-        <div class="row">
+        <div v-if="!isBugTemplateCreation" class="row">
           <div class="form-group col-md-6">
             <label for="status">Status</label>
             <input
@@ -219,8 +304,13 @@
         </div>
 
         <div class="row">
-          <div class="form-group col-md-6">
-            <label for="version">Version</label>
+          <div
+            class="form-group col-md-6"
+            :class="{ 'has-error': bugzillaTemplateFieldErrors?.version }"
+          >
+            <label for="version" class="control-label"
+              >Version{{ isBugTemplateCreation && "*" }}</label
+            >
             <input
               id="id_version"
               v-model="template.version"
@@ -229,6 +319,9 @@
               name="version"
               type="text"
             />
+            <span v-if="bugzillaTemplateFieldErrors?.version" class="help-block"
+              ><strong>This field is required.</strong></span
+            >
           </div>
           <div class="form-group col-md-6">
             <label for="target_milestone">Target milestone</label>
@@ -418,52 +511,142 @@
             />
           </div>
         </div>
+
+        <div v-if="isBugTemplateCreation" class="row">
+          <div class="form-group col-md-6">
+            <label for="testcase_filename"
+              >Filename that will be used for the testcase</label
+            >
+            <input
+              id="testcase_filename"
+              v-model="fileName"
+              name="testcase_filename"
+              type="text"
+              class="form-control"
+            />
+          </div>
+          <div class="col-md-2">
+            <label for="file_extension">File extension:</label>
+            <input
+              id="file_extension"
+              type="text"
+              class="form-control"
+              disabled
+              :value="fileExtension"
+            />
+          </div>
+        </div>
+
         <hr />
 
-        <CrashDataSection
-          :initial-not-attach-data="notAttachData"
-          :initial-data="crashData"
-          :path-prefix="entryMetadata.pathprefix"
-          @update-not-attach-data="notAttachData = $event"
-          @update-data="crashData = $event"
-        />
+        <div v-if="!isBugTemplateCreation">
+          <CrashDataSection
+            :initial-not-attach-data="notAttachData"
+            :initial-data="crashData"
+            :path-prefix="entryMetadata.pathprefix"
+            @update-not-attach-data="notAttachData = $event"
+            @update-data="crashData = $event"
+          />
 
-        <TestCaseSection
-          v-if="entry.testcase"
-          :initial-not-attach-test="notAttachTest"
-          :entry="entry"
-          :template="template"
-          @update-not-attach-test="notAttachTest = $event"
-          @update-filename="entry.testcase = $event"
-          @update-content="testCaseContent = $event"
-        />
+          <TestCaseSection
+            v-if="entry.testcase"
+            :initial-not-attach-test="notAttachTest"
+            :entry="entry"
+            :template="template"
+            :file-extension="fileExtension"
+            :file-name="fileName"
+            @update-not-attach-test="notAttachTest = $event"
+            @update-filename="fileName = $event"
+            @update-content="testCaseContent = $event"
+          />
 
-        <div v-if="createError" class="alert alert-danger" role="alert">
-          <button
-            type="button"
-            class="close"
-            data-dismiss="alert"
-            aria-label="Close"
-            @click="createError = null"
+          <div v-if="createError" class="alert alert-danger" role="alert">
+            <button
+              type="button"
+              class="close"
+              data-dismiss="alert"
+              aria-label="Close"
+              @click="createError = null"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+            An error occurred while submitting the bug to
+            <strong>{{ provider.hostname }}</strong
+            >: {{ createError }}
+          </div>
+
+          <div
+            v-else-if="createdBugId"
+            class="alert alert-success"
+            role="alert"
           >
-            <span aria-hidden="true">&times;</span>
-          </button>
-          An error occurred while submitting the bug to
-          <strong>{{ provider.hostname }}</strong
-          >: {{ createError }}
-        </div>
+            Bug
+            <strong
+              ><a :href="bugLink" target="_blank">{{ createdBugId }}</a></strong
+            >
+            was successfully submitted and created on
+            <strong>{{ provider.hostname }}</strong> provider.
+          </div>
 
-        <div v-else-if="createdBugId" class="alert alert-success" role="alert">
-          Bug
-          <strong
-            ><a :href="bugLink" target="_blank">{{ createdBugId }}</a></strong
+          <div
+            v-if="publishCrashDataError"
+            class="alert alert-danger"
+            role="alert"
           >
-          was successfully submitted and created on
-          <strong>{{ provider.hostname }}</strong> provider.
+            <button
+              type="button"
+              class="close"
+              data-dismiss="alert"
+              aria-label="Close"
+              @click="publishCrashDataError = null"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+            An error occurred while attaching crash data to the created external
+            bug: {{ publishCrashDataError }}
+          </div>
+
+          <div
+            v-if="publishTestCaseError"
+            class="alert alert-danger"
+            role="alert"
+          >
+            <button
+              type="button"
+              class="close"
+              data-dismiss="alert"
+              aria-label="Close"
+              @click="publishTestCaseError = null"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+            An error occurred while attaching the testcase to the created
+            {{ publishTestCaseError }}
+          </div>
+
+          <div v-if="assignError" class="alert alert-danger" role="alert">
+            <button
+              type="button"
+              class="close"
+              data-dismiss="alert"
+              aria-label="Close"
+              @click="assignError = null"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+            An error occurred while assigning the created external bug to the
+            current crash bucket: {{ assignError }}
+          </div>
+
+          <div v-if="!bugzillaToken" class="alert alert-warning" role="alert">
+            Please define an API Token for
+            <strong>{{ provider.hostname }}</strong> in your settings to submit
+            a new bug.
+          </div>
         </div>
 
         <div
-          v-if="publishCrashDataError"
+          v-if="bugZillaTemplateError"
           class="alert alert-danger"
           role="alert"
         >
@@ -472,58 +655,25 @@
             class="close"
             data-dismiss="alert"
             aria-label="Close"
-            @click="publishCrashDataError = null"
+            @click="bugZillaTemplateError = null"
           >
             <span aria-hidden="true">&times;</span>
           </button>
-          An error occurred while attaching crash data to the created external
-          bug: {{ publishCrashDataError }}
-        </div>
-
-        <div
-          v-if="publishTestCaseError"
-          class="alert alert-danger"
-          role="alert"
-        >
-          <button
-            type="button"
-            class="close"
-            data-dismiss="alert"
-            aria-label="Close"
-            @click="publishTestCaseError = null"
-          >
-            <span aria-hidden="true">&times;</span>
-          </button>
-          An error occurred while attaching the testcase to the created external
-          bug: {{ publishTestCaseError }}
-        </div>
-
-        <div v-if="assignError" class="alert alert-danger" role="alert">
-          <button
-            type="button"
-            class="close"
-            data-dismiss="alert"
-            aria-label="Close"
-            @click="assignError = null"
-          >
-            <span aria-hidden="true">&times;</span>
-          </button>
-          An error occurred while assigning the created external bug to the
-          current crash bucket: {{ assignError }}
-        </div>
-
-        <div v-if="!bugzillaToken" class="alert alert-warning" role="alert">
-          Please define an API Token for
-          <strong>{{ provider.hostname }}</strong> in your settings to submit a
-          new bug.
+          {{ bugZillaTemplateError }}
         </div>
 
         <div>
           <button
             type="button"
             class="btn btn-danger"
-            :disabled="!bugzillaToken || submitting"
-            @click="createExternalBug"
+            :disabled="
+              isBugTemplateCreation ? submitting : !bugzillaToken || submitting
+            "
+            @click="
+              isBugTemplateCreation
+                ? createOrUpdateBugzillabugTemplate()
+                : createExternalBug()
+            "
           >
             Submit
           </button>
@@ -553,10 +703,13 @@ import {
   watch,
 } from "vue";
 import * as api from "../../api";
+
+import mime from "mime";
 import * as bugzillaApi from "../../bugzilla_api";
 import * as HandlebarsHelpers from "../../handlebars_helpers";
 import { errorParser } from "../../helpers";
 import CrashDataSection from "./CrashDataSection.vue";
+import FullPPCSelect from "./FullPPCSelect.vue";
 import HelpPopover from "./HelpPopover.vue";
 import ProductComponentSelect from "./ProductComponentSelect.vue";
 import SummaryInput from "./SummaryInput.vue";
@@ -577,6 +730,7 @@ export default defineComponent({
     CrashDataSection,
     TestCaseSection,
     HelpPopover,
+    ppcselect: FullPPCSelect,
   },
   props: {
     providerId: {
@@ -585,7 +739,8 @@ export default defineComponent({
     },
     templateId: {
       type: Number,
-      required: true,
+      required: false,
+      default: null,
     },
     entryId: {
       type: Number,
@@ -593,7 +748,13 @@ export default defineComponent({
     },
     bucketId: {
       type: Number,
-      required: true,
+      required: false,
+      default: null,
+    },
+    isBugTemplateCreation: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
   },
   setup(props) {
@@ -602,7 +763,31 @@ export default defineComponent({
     const provider = ref(null);
     const templates = ref([]);
     const selectedTemplate = ref(null);
-    const template = ref(null);
+    const template = ref(
+      !props.isBugTemplateCreation
+        ? null
+        : {
+            name: "",
+            summary: "",
+            current_product: "",
+            current_component: "",
+            cc: "",
+            assigned_to: "",
+            priority: "",
+            severity: "",
+            alias: "",
+            qa_contact: "",
+            version: "",
+            target_milestone: "",
+            blocks: "",
+            dependson: "",
+            attrs: "",
+            description: "",
+            security: false,
+            security_group: "",
+            testcase_filename: "",
+          },
+    );
     const entry = ref(null);
     const summary = ref("");
     const product = ref("");
@@ -619,9 +804,49 @@ export default defineComponent({
     const testCaseContent = ref("");
     const notAttachData = ref(false);
     const crashData = ref("");
+    const bugzillaTemplateFieldErrors = ref({});
+    const bugZillaTemplateError = ref(null);
+    const formElement = ref(null);
+    const fileExtension = ref(null);
+    const fileName = ref(null);
 
     const bugLink = computed(() => {
       return `https://${provider.value.hostname}/${createdBugId.value}`;
+    });
+
+    const filenameWithExtension = computed(() => {
+      return `${fileName.value}.${fileExtension.value}`;
+    });
+
+    watch(() => {
+      if (entry.value) {
+        // extract file name
+        const splittedAttachmentFilename = template.value?.testcase_filename
+          ? template.value.testcase_filename
+          : entry.value.testcase.split("/");
+
+        const attachmentFilenameAndExtension =
+          splittedAttachmentFilename[
+            splittedAttachmentFilename?.length - 1
+          ].split(".");
+
+        fileName.value = attachmentFilenameAndExtension[0];
+        fileExtension.value = attachmentFilenameAndExtension[1];
+      }
+    });
+
+    const fileMimetype = computed(() => {
+      const mimeType = mime.getType(filenameWithExtension.value);
+
+      if (mimeType) {
+        return mimeType;
+      }
+
+      if (entry.value.testcase_isbinary) {
+        return "application/octet-stream";
+      }
+
+      return "text/plain";
     });
 
     const bugzillaToken = computed(() => {
@@ -681,7 +906,7 @@ export default defineComponent({
       if (!template.value || !entry.value) return "";
       try {
         const compiled = Handlebars.compile(template.value.description);
-        let rendered = compiled({
+        const renderedData = {
           summary: summary.value,
           shortsig: entry.value.shortSignature,
           product: entry.value.product,
@@ -698,7 +923,15 @@ export default defineComponent({
             ? "(Crash data not available)"
             : "For detailed crash information, see attachment.",
           ...metadataExtension(template.value.description),
-        });
+        };
+
+        if (!notAttachTest.value) {
+          renderedData["testcase_attachment"] = filenameWithExtension.value;
+        } else {
+          delete renderedData["testcase_attachment"];
+        }
+
+        let rendered = compiled(renderedData);
 
         // Remove the specified pathPrefix from traces and assertion
         if (entryMetadata.value.pathprefix)
@@ -778,6 +1011,13 @@ export default defineComponent({
         platform.value = entry.value.platform
           .replaceAll("-", "_")
           .replaceAll("arm", "ARM");
+
+      if (props.isBugTemplateCreation && props.templateId) {
+        template.value.current_component = template.value.component;
+        template.value.current_product = template.value.product;
+        product.value = template.value.product;
+        component.value = template.value.component;
+      }
     };
 
     const createExternalBug = async () => {
@@ -847,6 +1087,60 @@ export default defineComponent({
       }
     };
 
+    const createOrUpdateBugzillabugTemplate = async () => {
+      bugzillaTemplateFieldErrors.value = {};
+      bugZillaTemplateError.value = null;
+
+      if (!template.value.name) {
+        bugzillaTemplateFieldErrors.value.name = true;
+      }
+
+      if (!product.value) {
+        bugzillaTemplateFieldErrors.value.product = true;
+      }
+
+      if (!component.value) {
+        bugzillaTemplateFieldErrors.value.component = true;
+      }
+
+      if (!template.value.version) {
+        bugzillaTemplateFieldErrors.value.version = true;
+      }
+
+      if (Object.keys(bugzillaTemplateFieldErrors.value).length) {
+        formElement.value.scrollIntoView({ behavior: "smooth" });
+      } else {
+        const payload = {
+          ...template.value,
+          testcase_filename: filenameWithExtension.value,
+          product: product.value,
+          component: component.value,
+          op_sys: opSys.value,
+          platform: platform.value,
+          mode: "bug",
+        };
+
+        // let responseStatus;
+        try {
+          // form data payload
+          const formData = new FormData();
+          Object.keys(payload).forEach((key) => {
+            formData.append(key, payload[key]);
+          });
+
+          if (props.templateId) {
+            await api.updateBugzillaBugTemplate(props.templateId, formData);
+          } else {
+            await api.createBugzillaBugTemplate(formData);
+          }
+
+          window.location.href = "/crashmanager/bugzilla/templates";
+        } catch (error) {
+          bugZillaTemplateError.value = errorParser(error?.message);
+        }
+      }
+    };
+
     const publishAttachments = async () => {
       let payload = {};
       // Publish Crash data
@@ -855,9 +1149,9 @@ export default defineComponent({
           payload = {
             ids: [createdBugId.value],
             data: Base64.encode(crashData.value),
-            file_name: "crash_data.txt",
+            file_name: filenameWithExtension.value,
             summary: "Detailed Crash Information",
-            content_type: "text/plain",
+            content_type: fileMimetype.value,
           };
 
           await bugzillaApi.createAttachment({
@@ -885,11 +1179,9 @@ export default defineComponent({
             data: entry.value.testcase_isbinary
               ? Base64.fromUint8Array(content)
               : Base64.encode(content),
-            file_name: entry.value.testcase,
+            file_name: filenameWithExtension.value,
             summary: "Testcase",
-            content_type: entry.value.testcase_isbinary
-              ? "application/octet-stream"
-              : "text/plain",
+            content_type: fileMimetype.value,
           };
 
           await bugzillaApi.createAttachment({
@@ -947,12 +1239,22 @@ export default defineComponent({
       );
       provider.value = providers.value.find((p) => p.id === props.providerId);
       selectedProvider.value = provider.value.id;
-      data = await api.listTemplates();
-      templates.value = data.results.filter((t) => t.mode === "bug");
-      template.value = templates.value.find((t) => t.id === props.templateId);
-      if (template.value) {
-        selectedTemplate.value = template.value.id;
-        updateFields();
+
+      // Prevent updating the template value when on the "Bug Template Creation" page
+      if (props.templateId !== null) {
+        data = await api.listTemplates(props.templateId);
+
+        if (!data.results) {
+          data.results = [data];
+        }
+
+        templates.value = data.results.filter((t) => t.mode === "bug");
+        template.value = templates.value.find((t) => t.id === props.templateId);
+
+        if (template.value) {
+          selectedTemplate.value = template.value.id;
+          updateFields();
+        }
       }
     };
 
@@ -988,8 +1290,16 @@ export default defineComponent({
       renderedWhiteboard,
       renderedKeywords,
       renderedAttrs,
+      filenameWithExtension,
+      fileMimetype,
+      bugZillaTemplateError,
+      bugzillaTemplateFieldErrors,
+      formElement,
+      fileExtension,
+      fileName,
       goBack,
       createExternalBug,
+      createOrUpdateBugzillabugTemplate,
     };
   },
 });
