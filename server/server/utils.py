@@ -4,6 +4,10 @@ import uuid
 
 import redis
 
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.exceptions import PermissionDenied
+from django.conf import settings
+
 LOG = logging.getLogger("fuzzmanager.utils")
 
 
@@ -63,4 +67,32 @@ class RedisLock:
         LOG.debug(
             "Failed to release lock: %s(%s) != %s", self.name, self.unique_id, existing
         )
+        return False
+
+def get_client_ip(request):
+    """
+    Extracts the client IP address from request headers.
+    """
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(",")[0].strip()
+    else:
+        ip = request.META.get("REMOTE_ADDR")
+    
+    return ip
+
+class IPRestrictedTokenAuthentication(TokenAuthentication):
+    def authenticate(self, request):
+        if  self.is_ip_restricted(request):
+            raise PermissionDenied("IP address restricted. Access denied.")
+
+        return super().authenticate(request)
+
+    def is_ip_restricted(self, request):
+        allowed_ips = set(getattr(settings, "ALLOWED_IPS", []))
+        client_ip = get_client_ip(request)
+        if client_ip not in allowed_ips:
+            LOG.warning(f"IP address restricted: {client_ip}")
+            return True
+
         return False

@@ -425,3 +425,8 @@ DJANGO_NOTIFICATIONS_CONFIG = {"USE_JSONFIELD": True}
 
 # Report coverage reports with a drop of greater than 10%
 COVERAGE_REPORT_DELTA = 10
+
+# Allowed IP Adresses
+ALLOWED_IPS = [
+    "127.0.0.1",
+]
