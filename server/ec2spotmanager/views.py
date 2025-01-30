@@ -17,6 +17,7 @@ from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.throttling import UserRateThrottle
 
 from server.auth import CheckAppPermission
 
@@ -36,7 +37,6 @@ from .models import (
     ProviderStatusEntry,
 )
 from .serializers import MachineStatusSerializer, PoolConfigurationSerializer
-
 
 def renderError(request, err):
     return render(request, "error.html", {"error_message": err})
@@ -917,6 +917,7 @@ class UptimeChartViewAccumulated(JSONView):
 
 
 class MachineStatusViewSet(APIView):
+    throttle_classes = [UserRateThrottle]
     authentication_classes = (TokenAuthentication,)
 
     def get(self, request, *args, **kwargs):
@@ -947,6 +948,7 @@ class PoolConfigurationViewSet(
     API endpoint that allows viewing PoolConfigurations
     """
 
+    throttle_classes = [UserRateThrottle]
     authentication_classes = (TokenAuthentication,)
     permission_classes = (CheckAppPermission,)
     queryset = PoolConfiguration.objects.all()
@@ -964,6 +966,7 @@ class PoolConfigurationViewSet(
 
 
 class PoolCycleView(APIView):
+    throttle_classes = [UserRateThrottle]
     authentication_classes = (TokenAuthentication,)
     permission_classes = (CheckAppPermission,)
 
@@ -982,6 +985,7 @@ class PoolCycleView(APIView):
 
 
 class PoolEnableView(APIView):
+    throttle_classes = [UserRateThrottle]
     authentication_classes = (TokenAuthentication,)
     permission_classes = (CheckAppPermission,)
 
@@ -1002,6 +1006,7 @@ class PoolEnableView(APIView):
 
 
 class PoolDisableView(APIView):
+    throttle_classes = [UserRateThrottle]
     authentication_classes = (TokenAuthentication,)
     permission_classes = (CheckAppPermission,)
 
