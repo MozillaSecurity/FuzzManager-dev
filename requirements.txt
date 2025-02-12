@@ -199,7 +199,7 @@ propcache==0.2.1
     #   yarl
 pycparser==2.22
     # via cffi
-pycryptodome==3.7.3
+pycryptodome==3.19.1
     # via laniakea
 pyjwt==2.10.1
     # via adal
