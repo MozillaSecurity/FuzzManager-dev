@@ -24,6 +24,7 @@ from rest_framework.exceptions import MethodNotAllowed, ValidationError
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.throttling import UserRateThrottle
 
 from FTB.ProgramConfiguration import ProgramConfiguration
 from FTB.Signatures.CrashInfo import CrashInfo
@@ -1017,6 +1018,7 @@ class CrashEntryViewSet(
 ):
     """API endpoint that allows adding/viewing CrashEntries"""
 
+    throttle_classes = [UserRateThrottle]
     authentication_classes = (TokenAuthentication, SessionAuthentication)
     queryset = CrashEntry.objects.all().select_related(
         "product", "platform", "os", "client", "tool", "testcase"
@@ -1143,6 +1145,7 @@ class BucketViewSet(
 ):
     """API endpoint that allows viewing Buckets"""
 
+    throttle_classes = [UserRateThrottle]
     authentication_classes = (TokenAuthentication, SessionAuthentication)
     queryset = Bucket.objects.all().select_related("bug", "bug__externalType")
     serializer_class = BucketSerializer
@@ -1420,6 +1423,8 @@ class BucketViewSet(
 class BucketVueViewSet(BucketViewSet):
     """API endpoint that allows viewing Buckets and always uses Vue serializer"""
 
+    throttle_classes = [UserRateThrottle]
+
     def get_serializer(self, *args, **kwds):
         self.vue = True
         return BucketVueSerializer(*args, **kwds)
@@ -1430,6 +1435,7 @@ class BugProviderViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     API endpoint that allows listing BugProviders
     """
 
+    throttle_classes = [UserRateThrottle]
     authentication_classes = (TokenAuthentication, SessionAuthentication)
     queryset = BugProvider.objects.all()
     serializer_class = BugProviderSerializer
@@ -1442,6 +1448,7 @@ class BugzillaTemplateViewSet(
     API endpoint that allows viewing BugzillaTemplates
     """
 
+    throttle_classes = [UserRateThrottle]
     authentication_classes = (TokenAuthentication, SessionAuthentication)
     queryset = BugzillaTemplate.objects.all()
     serializer_class = BugzillaTemplateSerializer
@@ -1452,6 +1459,7 @@ class NotificationViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     API endpoint that allows listing unread Notifications
     """
 
+    throttle_classes = [UserRateThrottle]
     authentication_classes = (TokenAuthentication, SessionAuthentication)
     serializer_class = NotificationSerializer
     filter_backends = [
@@ -1545,6 +1553,7 @@ def json_to_query(json_str):
 
 
 class AbstractDownloadView(APIView):
+    throttle_classes = [UserRateThrottle]
     authentication_classes = (TokenAuthentication, SessionAuthentication)
     permission_classes = (CheckAppPermission,)
 
@@ -1765,6 +1774,7 @@ class CrashStatsViewSet(viewsets.GenericViewSet):
     API endpoint that allows retrieving CrashManager statistics
     """
 
+    throttle_classes = [UserRateThrottle]
     authentication_classes = (TokenAuthentication, SessionAuthentication)
     queryset = CrashEntry.objects.all()
     filter_backends = [
