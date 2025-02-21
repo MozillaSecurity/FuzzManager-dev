@@ -18,7 +18,7 @@ from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from django.views.generic.list import ListView
 from notifications.models import Notification
 from rest_framework import mixins, status, viewsets
-from rest_framework.authentication import SessionAuthentication, TokenAuthentication
+from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import action
 from rest_framework.exceptions import MethodNotAllowed, ValidationError
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
@@ -28,6 +28,7 @@ from rest_framework.views import APIView
 from FTB.ProgramConfiguration import ProgramConfiguration
 from FTB.Signatures.CrashInfo import CrashInfo
 from server.auth import CheckAppPermission
+from server.utils import IPRestrictedTokenAuthentication
 
 from .forms import (
     BugzillaTemplateBugForm,
@@ -1017,7 +1018,7 @@ class CrashEntryViewSet(
 ):
     """API endpoint that allows adding/viewing CrashEntries"""
 
-    authentication_classes = (TokenAuthentication, SessionAuthentication)
+    authentication_classes = (IPRestrictedTokenAuthentication, SessionAuthentication)
     queryset = CrashEntry.objects.all().select_related(
         "product", "platform", "os", "client", "tool", "testcase"
     )
@@ -1143,7 +1144,7 @@ class BucketViewSet(
 ):
     """API endpoint that allows viewing Buckets"""
 
-    authentication_classes = (TokenAuthentication, SessionAuthentication)
+    authentication_classes = (IPRestrictedTokenAuthentication, SessionAuthentication)
     queryset = Bucket.objects.all().select_related("bug", "bug__externalType")
     serializer_class = BucketSerializer
     filter_backends = [
@@ -1430,7 +1431,7 @@ class BugProviderViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     API endpoint that allows listing BugProviders
     """
 
-    authentication_classes = (TokenAuthentication, SessionAuthentication)
+    authentication_classes = (IPRestrictedTokenAuthentication, SessionAuthentication)
     queryset = BugProvider.objects.all()
     serializer_class = BugProviderSerializer
 
@@ -1442,7 +1443,7 @@ class BugzillaTemplateViewSet(
     API endpoint that allows viewing BugzillaTemplates
     """
 
-    authentication_classes = (TokenAuthentication, SessionAuthentication)
+    authentication_classes = (IPRestrictedTokenAuthentication, SessionAuthentication)
     queryset = BugzillaTemplate.objects.all()
     serializer_class = BugzillaTemplateSerializer
 
@@ -1452,7 +1453,7 @@ class NotificationViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     API endpoint that allows listing unread Notifications
     """
 
-    authentication_classes = (TokenAuthentication, SessionAuthentication)
+    authentication_classes = (IPRestrictedTokenAuthentication, SessionAuthentication)
     serializer_class = NotificationSerializer
     filter_backends = [
         JsonQueryFilterBackend,
@@ -1545,7 +1546,7 @@ def json_to_query(json_str):
 
 
 class AbstractDownloadView(APIView):
-    authentication_classes = (TokenAuthentication, SessionAuthentication)
+    authentication_classes = (IPRestrictedTokenAuthentication, SessionAuthentication)
     permission_classes = (CheckAppPermission,)
 
     def response(self, file_path, filename, content_type="application/octet-stream"):
@@ -1765,7 +1766,7 @@ class CrashStatsViewSet(viewsets.GenericViewSet):
     API endpoint that allows retrieving CrashManager statistics
     """
 
-    authentication_classes = (TokenAuthentication, SessionAuthentication)
+    authentication_classes = (IPRestrictedTokenAuthentication, SessionAuthentication)
     queryset = CrashEntry.objects.all()
     filter_backends = [
         ToolFilterCrashesBackend,
