@@ -11,6 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import filters, mixins, viewsets
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
+from rest_framework.throttling import UserRateThrottle
 
 from crashmanager.models import Tool
 from server.views import JsonQueryFilterBackend, SimpleQueryFilterBackend
@@ -24,7 +25,6 @@ from .serializers import (
 )
 from .SourceCodeProvider import SourceCodeProvider
 from .tasks import aggregate_coverage_data, calculate_report_summary
-
 
 def index(request):
     return redirect(
@@ -705,6 +705,7 @@ class CollectionViewSet(
     API endpoint that allows adding/viewing Collections
     """
 
+    throttle_classes = [UserRateThrottle]
     authentication_classes = (TokenAuthentication, SessionAuthentication)
     queryset = Collection.objects.all()
     serializer_class = CollectionSerializer
@@ -754,6 +755,7 @@ class ReportViewSet(
     API endpoint that allows viewing Reports
     """
 
+    throttle_classes = [UserRateThrottle]
     authentication_classes = (TokenAuthentication, SessionAuthentication)
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
@@ -778,6 +780,7 @@ class RepositoryViewSet(
     API endpoint that allows viewing Repositories
     """
 
+    throttle_classes = [UserRateThrottle]
     authentication_classes = (TokenAuthentication,)
     queryset = Repository.objects.all()
     serializer_class = RepositorySerializer
@@ -819,6 +822,7 @@ class ReportConfigurationViewSet(
     API endpoint that allows adding/updating/viewing Report Configurations
     """
 
+    throttle_classes = [UserRateThrottle]
     authentication_classes = (TokenAuthentication, SessionAuthentication)
     queryset = ReportConfiguration.objects.all()
     serializer_class = ReportConfigurationSerializer
