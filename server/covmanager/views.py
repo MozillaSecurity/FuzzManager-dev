@@ -12,7 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import filters, mixins, viewsets
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 
-from crashmanager.models import Tool
+from crashmanager.models import Tool, User
 from server.views import JsonQueryFilterBackend, SimpleQueryFilterBackend
 
 from .models import Collection, Report, ReportConfiguration, ReportSummary, Repository
@@ -714,6 +714,25 @@ class CollectionViewSet(
         SimpleQueryFilterBackend,
         CollectionFilterBackend,
     ]
+
+    def create(self, request, *args, **kwargs):
+        """Check user has access to tools before creation"""
+        tools_str = request.data.get('tools')
+        requested_tools = set(tools_str.split(','))
+
+        user = User.get_or_create_restricted(request.user)[0]
+        if user.restricted:
+            allowed_tools = set(user.defaultToolsFilter.values_list('name', flat=True))
+            if not allowed_tools:
+                raise PermissionDenied({"message": "No tools assigned to user"})
+
+            unauthorized_tools = requested_tools - allowed_tools
+            if unauthorized_tools:
+                raise PermissionDenied(
+                    {"message": f"You don't have permission to use the following tools: {', '.join(unauthorized_tools)}"}
+                )
+
+        return super().create(request, *args, **kwargs)
 
 
 class ReportFilterBackend(filters.BaseFilterBackend):
