@@ -9,6 +9,7 @@ from rest_framework.authentication import SessionAuthentication, TokenAuthentica
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle
 
 from server.auth import CheckAppPermission
 from server.views import JsonQueryFilterBackend, SimpleQueryFilterBackend
@@ -53,6 +54,7 @@ class PoolViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint that allows viewing Pools
     """
+    throttle_classes = [UserRateThrottle]
 
     authentication_classes = (TokenAuthentication, SessionAuthentication)
     permission_classes = (CheckAppPermission,)
@@ -82,6 +84,7 @@ class TaskViewSet(
     API endpoint that allows viewing Tasks
     """
 
+    throttle_classes = [UserRateThrottle]
     authentication_classes = (TokenAuthentication, SessionAuthentication)
     permission_classes = (CheckAppPermission,)
     queryset = Task.objects.all()
