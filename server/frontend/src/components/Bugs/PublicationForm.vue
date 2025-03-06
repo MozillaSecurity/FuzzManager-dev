@@ -1165,9 +1165,9 @@ export default defineComponent({
           payload = {
             ids: [createdBugId.value],
             data: Base64.encode(crashData.value),
-            file_name: filenameWithExtension.value,
+            file_name: "crash_data.txt",
             summary: "Detailed Crash Information",
-            content_type: fileMimetype.value,
+            content_type: "text/plain",
           };
 
           await bugzillaApi.createAttachment({
@@ -1195,9 +1195,9 @@ export default defineComponent({
             data: entry.value.testcase_isbinary
               ? Base64.fromUint8Array(content)
               : Base64.encode(content),
-            file_name: "crash_data.txt",
+            file_name: filenameWithExtension.value,
             summary: "Testcase",
-            content_type: "text/plain",
+            content_type: fileMimetype.value,
           };
 
           await bugzillaApi.createAttachment({

@@ -478,8 +478,6 @@ export default defineComponent({
         is_private: this.isPrivate,
       };
 
-      await this.publishAttachments();
-
       try {
         let data = await bugzillaApi.createComment({
           hostname: this.provider.hostname,
